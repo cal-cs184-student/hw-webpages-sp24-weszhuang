@@ -45,7 +45,6 @@
       the homework made us think about optimizations, and the best way to sample points while
       taking up the least amount of time and space.
     </p>
-
     <h2 align="middle">Section I: Rasterization</h2>
 
     <h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
@@ -77,257 +76,219 @@
     orientation of points are clockwise or countercockwise. We just check if the sings of all the dot products
     are positive or negative.
     <br><br>
+    My code uses a double for loop to check all the pixels within the bounding box, and assuming arithmetic can be
+    done
+    in constant time, sample point triangle check will not add to the complexity of the algorithm.
+    Therefore, my algorithm is no worse than the one that checks each sample within the bounding box of the triangle.
+    <br><br>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/q1.png" align="middle" width="400px" />
+            <figcaption align="middle">Image of basic/test4.svg.</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+    </p>
 
-    <div>
 
-      <h2 align="middle">Overview</h2>
-      <p>Give a high-level overview of what you implemented in this homework Think about what you've built as a whole.
-        Share your thoughts on what interesting things you've learned from completing the homework.</p>
-
-      <h2 align="middle">Section I: Rasterization</h2>
-
-      <h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
-      <p>The first step of the algorithm is calculating the bounding box of the triaingle. We can calculate this through
-        taking the ceiling and the floor
-        of the maximum and the minimum of the triangle coordinates (x0, x1, x2). Since the triangle we are trying to
-        sample is small, we would not need to sample the whole
-        width and height of the screen. The code for calculating the bounding box is as follows: <br />
-      <ul>int max_x = (int)ceil(max({x0, x1, x2})); <br />
-        int min_x = (int)floor(min({x0, x1, x2}));<br />
-        int max_y = (int)ceil(max({y0, y1, y2}));<br />
-        int min_y = (int)floor(min({y0, y1, y2}));<br /></ul>
-      The second step will be to sample all the points within our bounding box and determine if the point lies inside or
-      outside the triangle. We do this by creating vectors of the edges of triangles <br />
-      <ul>Vector3D line1 = a-b, <br />
-        Vector3D line2 = b-c, <br />
-        Vector3D line3 = c-a, <br /></ul>
-      where points a, b, c are the points of the triangle. The points of the triangle can be oriented clockwise or
-      counterclockwise. We calculate a orthogonal vector to each of the lines: (-y, x, 0) and
-      Do three line tests for each sample coordinate. We take a dot product of the orthogonal line vector with the
-      candidate minus the starting point of the line vector. The sample vec will be (i + 0.5, j+ 0.5) where we loop
-      over i and j within the bounding box. <br />
-      <ul>dot(sample_vec - b, line1norm) <br />
-        dot(sample_vec - c, line2norm) <br />
-        dot(sample_vec - a, line3norm) <br /></ul>
-      We either check if the dot products are all positive or negative. If the normal vectors are pointing outside the
-      triangle, we would expect the dot product to be all negative. If the normal vectors are pointing
-      inside the triangle, then the dot products should all be positive. Therefore, we don't need to check if the
-      orientation of points are clockwise or countercockwise. We just check if the sings of all the dot products
-      are positive or negative.
+    <h3 align="middle">Part 2: Antialiasing triangles</h3>
+    <p>
+      Supersampling removes the effects of aliasing by increasing the sampling rate frequency. We first supersample by
+      sampling multiple points within the pixel, and then downsample
+      by averaging all the sampled values within a pixel. Supersampling is useful since it can remove aliasing effects
+      such as jaggies and isolated pixelated edges by applying a pixel sized
+      filter box, which helps filter out high frequencies.
       <br><br>
-      My code uses a double for loop to check all the pixels within the bounding box, and assuming arithmetic can be
-      done
-      in constant time, sample point triangle check will not add to the complexity of the algorithm.
-      Therefore, my algorithm is no worse than the one that checks each sample within the bounding box of the triangle.
-      <br><br>
-      <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/q1.png" align="middle" width="400px" />
-              <figcaption align="middle">Image of basic/test4.svg.</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-      </p>
-
-
-      <h3 align="middle">Part 2: Antialiasing triangles</h3>
-      <p>
-        Supersampling removes the effects of aliasing by increasing the sampling rate frequency. We first supersample by
-        sampling multiple points within the pixel, and then downsample
-        by averaging all the sampled values within a pixel. Supersampling is useful since it can remove aliasing effects
-        such as jaggies and isolated pixelated edges by applying a pixel sized
-        filter box, which helps filter out high frequencies.
-        <br><br>
-        The algorithm and data structures used for supersampling are as follows. Since we need to have the space to
-        store
-        all the samples, the size of the sample_buffer is always width*height*sample_rate.
-        When we are looping around the sample points of the bounding box, and if we determine if a certain pixel is
-        inside
-        the triangle, we have to sample this sqrt(sample_rate) times both vertically and horizontally.
-        Using a double for loop (x, y), we iterate through the horizontal and vertical sampling rates. To ensure the
-        pixel
-        falls inside the middle of the sample we use the equation: <br>
-      <ul>
-        sample_x = i + x/sqrt_sample_rate + 1/(2*sqrt_sample_rate)<br>
-        sample_y = i + y/sqrt_sample_rate + 1/(2*sqrt_sample_rate)<br>
-      </ul>
-      Simplifying this equation: <br>
-      <ul>
-        sample_x = i + (2*x+1)/(2*sqrt_sample_rate) <br>
-        sample_y = i + (2*y+1)/(2*sqrt_sample_rate) <br>
-      </ul>
-      We can store the color of the triangle to the sample buffer, accounting for the sample dimention added in <br>
-      <ul>
-        sample_buffer[(i * sqrt_sample_rate + y) * (width * sqrt_sample_rate) + (j * sqrt_sample_rate + x)] = color;
-        <br>
-      </ul>
-      There are further changes to the pipeline. When we draw the line, we have to make sure that the whole pixel is
-      colored with the assigned color.
-      Hence, we looped through the sample_rate in the fill_pixel function in order to fill the pixel values with the
-      correct color. <br><br>
-      Finally, in the resolve_to_framebuffer function, we simply averaged out the color value by looping through the
-      sample_rate, and assigned rgb_framebuffer_target
-      an average color of a particular pixel. <br><br>
-      By using this method, we could get rid of triangles' isolated pixels and jaggies by trading off runtime complexity
-      and space. <br><br>
-      <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/q2-1.png" align="middle" width="400px" />
-              <figcaption align="middle">Sample Rate 1</figcaption>
-            </td>
-            <td>
-              <img src="images/q2-2.png" align="middle" width="400px" />
-              <figcaption align="middle">Sample Rate 4</figcaption>
-            </td>
-          </tr>
-          <br>
-          <tr>
-            <td>
-              <img src="images/q2-3.png" align="middle" width="400px" />
-              <figcaption align="middle">Sample Rate 8</figcaption>
-            </td>
-            <td>
-              <img src="images/q2-4.png" align="middle" width="400px" />
-              <figcaption align="middle">Sample Rate 16</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-      As I described previously, by supersampling, we are increasing the sample rate and downsampling which filters out
-      the high frequencies in our image. Therefore, we can see a smoother triangle edge
-      as the white and triangle pixels average out.
-      </p>
-
-
-      <h3 align="middle">Part 3: Transforms</h3>
-      <p>
-      <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/q3.png" align="middle" width="400px" />
-              <figcaption align="middle">Robot on a yoga pose</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-      I tried to make the robot do a yoga pose, more specificaly, the Warrior II pose. <br>
-      I have rotated the right leg -30 degress and rotated the bottom half of the right leg by 50 degrees for the robot
-      to
-      put pressure on his right knee.
-      I had to adjust the translation of the bottom knee (set x translation to zero) as the knee was already rotated
-      outwards. <br>
-      Then, I rotated the left leg by 40 degrees just so he was spreading the legs.
-      </p>
-
-
-      <h2 align="middle">Section II: Sampling</h2>
-
-      <h3 align="middle">Part 4: Barycentric coordinates</h3>
-      <p>
-      <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/q4.png" align="middle" width="400px" />
-              <figcaption align="middle">Triangle Rendered with Barycentric Coordinates</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-      Barycentric coordinates are used to add texture to a scene. Since we are using triangles to render shapes,
-      we need to figure out where the sample is in relation to the three points that define a triangle that may be
-      assigned
-      different texture values. <br><br>
-      In my code, I use alpha, bravo, charlie to represent the weights associated with the three edges of the triangle.
+      The algorithm and data structures used for supersampling are as follows. Since we need to have the space to
+      store
+      all the samples, the size of the sample_buffer is always width*height*sample_rate.
+      When we are looping around the sample points of the bounding box, and if we determine if a certain pixel is
+      inside
+      the triangle, we have to sample this sqrt(sample_rate) times both vertically and horizontally.
+      Using a double for loop (x, y), we iterate through the horizontal and vertical sampling rates. To ensure the
+      pixel
+      falls inside the middle of the sample we use the equation: <br>
+    <ul>
+      sample_x = i + x/sqrt_sample_rate + 1/(2*sqrt_sample_rate)<br>
+      sample_y = i + y/sqrt_sample_rate + 1/(2*sqrt_sample_rate)<br>
+    </ul>
+    Simplifying this equation: <br>
+    <ul>
+      sample_x = i + (2*x+1)/(2*sqrt_sample_rate) <br>
+      sample_y = i + (2*y+1)/(2*sqrt_sample_rate) <br>
+    </ul>
+    We can store the color of the triangle to the sample buffer, accounting for the sample dimention added in <br>
+    <ul>
+      sample_buffer[(i * sqrt_sample_rate + y) * (width * sqrt_sample_rate) + (j * sqrt_sample_rate + x)] = color;
       <br>
-      <ul>
-        alpha + bravo + charlie = 1 <br>
-        candidate_point = alpha*a + bravo*b + charlie*c <br>
-      </ul>
-      To calculate the weights, we take the ratio of the dot product of the sample point and the tangent vector to the
-      opposite line
-      and the dot product of the initial point (a, b, c) and the tangent vector to the opposite line.
-      We only have to calculate alpha and bravo since charlie will just be 1-alpha-bravo<br>
-      <ul>
-        alpha = dot(line2norm, sample_vec-c)/dot(line2norm, a-c); <br>
-        bravo = dot(line3norm, sample_vec-a)/dot(line3norm, b-a); <br>
-        charlie = 1 - alpha - bravo; <br>
-      </ul>
-      Barycentric coordinates can be used to map a point within a triangle with other data such as texture.
-      By calculating the barycentic coordinates for all samples, we can find the linear combination of the three
-      coordinate points (a, b, c) that makes up
-      each candidate point. As the points form a linear combination, we can compute the average color combination of
-      these three coordinates based on
-      the distance of the sample point to a, b, and c. The result is a triangle with smooth color transitions from red
-      (bottom left), blue (bottom right), and green (top) <br><br>
-      <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/q4-2.png" align="middle" width="400px" />
-              <figcaption align="middle">svg/basic/test7.svg</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-      </p>
+    </ul>
+    There are further changes to the pipeline. When we draw the line, we have to make sure that the whole pixel is
+    colored with the assigned color.
+    Hence, we looped through the sample_rate in the fill_pixel function in order to fill the pixel values with the
+    correct color. <br><br>
+    Finally, in the resolve_to_framebuffer function, we simply averaged out the color value by looping through the
+    sample_rate, and assigned rgb_framebuffer_target
+    an average color of a particular pixel. <br><br>
+    By using this method, we could get rid of triangles' isolated pixels and jaggies by trading off runtime complexity
+    and space. <br><br>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/q2-1.png" align="middle" width="400px" />
+            <figcaption align="middle">Sample Rate 1</figcaption>
+          </td>
+          <td>
+            <img src="images/q2-2.png" align="middle" width="400px" />
+            <figcaption align="middle">Sample Rate 4</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="images/q2-3.png" align="middle" width="400px" />
+            <figcaption align="middle">Sample Rate 8</figcaption>
+          </td>
+          <td>
+            <img src="images/q2-4.png" align="middle" width="400px" />
+            <figcaption align="middle">Sample Rate 16</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+    As I described previously, by supersampling, we are increasing the sample rate and downsampling which filters out
+    the high frequencies in our image. Therefore, we can see a smoother triangle edge
+    as the white and triangle pixels average out.
+    </p>
 
 
-      <h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
-      <p>
-        Pixel sampling refers to the set of techniques used to select the value of a pixel/subpixel to best represent
-        some underlying image or data. In our case we are using two different techniques to select a color value based
-        on
-        a backing texture map(Nearest neighbor, and Bilinear filtering). We perform our sampling using a uv coordinate
-        obtained by linearly interpolating the uv values betweeen the corners of a triangle. These uv coordinates then
-        are
-        mapped to a color either by the closest pixel on the uv map or a weighted average obtained through bilinear
-        interpolation.
-        <br><br>
-      <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/q5_nearest_1.png" align="middle" width="400px" />
-              <figcaption align="middle">Nearest Neighbor with 1 subsample</figcaption>
-            </td>
-            <td>
-              <img src="images/q5_bilinear_1.png" align="middle" width="400px" />
-              <figcaption align="middle">Bilinear Interpolation with 1 subsample</figcaption>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="images/q5_nearest_16.png" align="middle" width="400px" />
-              <figcaption align="middle">Nearest Neighbor with 16 subsample</figcaption>
-            </td>
-            <td>
-              <img src="images/q5_bilinear_16.png" align="middle" width="400px" />
-              <figcaption align="middle">Bilinear Interpolation with 16 subsample</figcaption>
-            </td>
-          </tr>
-        </table>
-        <figcaption align="middle">Images of texmap/test1.svg.</figcaption>
-      </div>
+    <h3 align="middle">Part 3: Transforms</h3>
+    <p>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/q3.png" align="middle" width="400px" />
+            <figcaption align="middle">Robot on a yoga pose</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+    I tried to make the robot do a yoga pose, more specificaly, the Warrior II pose. <br>
+    I have rotated the right leg -30 degress and rotated the bottom half of the right leg by 50 degrees for the robot
+    to
+    put pressure on his right knee.
+    I had to adjust the translation of the bottom knee (set x translation to zero) as the knee was already rotated
+    outwards. <br>
+    Then, I rotated the left leg by 40 degrees just so he was spreading the legs.
+    </p>
+
+
+    <h2 align="middle">Section II: Sampling</h2>
+
+    <h3 align="middle">Part 4: Barycentric coordinates</h3>
+    <p>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/q4.png" align="middle" width="400px" />
+            <figcaption align="middle">Triangle Rendered with Barycentric Coordinates</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+    Barycentric coordinates are used to add texture to a scene. Since we are using triangles to render shapes,
+    we need to figure out where the sample is in relation to the three points that define a triangle that may be
+    assigned
+    different texture values. <br><br>
+    In my code, I use alpha, bravo, charlie to represent the weights associated with the three edges of the triangle.
+    <br>
+    <ul>
+      alpha + bravo + charlie = 1 <br>
+      candidate_point = alpha*a + bravo*b + charlie*c <br>
+    </ul>
+    To calculate the weights, we take the ratio of the dot product of the sample point and the tangent vector to the
+    opposite line
+    and the dot product of the initial point (a, b, c) and the tangent vector to the opposite line.
+    We only have to calculate alpha and bravo since charlie will just be 1-alpha-bravo<br>
+    <ul>
+      alpha = dot(line2norm, sample_vec-c)/dot(line2norm, a-c); <br>
+      bravo = dot(line3norm, sample_vec-a)/dot(line3norm, b-a); <br>
+      charlie = 1 - alpha - bravo; <br>
+    </ul>
+    Barycentric coordinates can be used to map a point within a triangle with other data such as texture.
+    By calculating the barycentic coordinates for all samples, we can find the linear combination of the three
+    coordinate points (a, b, c) that makes up
+    each candidate point. As the points form a linear combination, we can compute the average color combination of
+    these three coordinates based on
+    the distance of the sample point to a, b, and c. The result is a triangle with smooth color transitions from red
+    (bottom left), blue (bottom right), and green (top) <br><br>
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/q4-2.png" align="middle" width="400px" />
+            <figcaption align="middle">svg/basic/test7.svg</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+    </p>
+
+
+    <h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+    <p>
+      Pixel sampling refers to the set of techniques used to select the value of a pixel/subpixel to best represent
+      some underlying image or data. In our case we are using two different techniques to select a color value based
+      on
+      a backing texture map(Nearest neighbor, and Bilinear filtering). We perform our sampling using a uv coordinate
+      obtained by linearly interpolating the uv values betweeen the corners of a triangle. These uv coordinates then
+      are
+      mapped to a color either by the closest pixel on the uv map or a weighted average obtained through bilinear
+      interpolation.
       <br><br>
-      With only one subsample it is visually clear that the line's intensity varies and is quite jagged when only using
-      Nearest Neighbor. The difference between the two sampling methods is significantly less albeit still noticable
-      when
-      they both have 16 subsamples per pixel. This is the case because at higher samples per pixel the averaging which
-      bilinear interpolation carries out is approximated by the averaging of the subsampled pixels. The largest
-      difference
-      between the two methods is shown when there are high frequency changes in color (such as the thin line shown in
-      the
-      example). This is because the effective sampling frequency is insufficient relative to the frequency of the source
-      signal.
-      </p>
-      <!-- explain pixel sampling in your own words and describe how you implemented it to perform texture
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/q5_nearest_1.png" align="middle" width="400px" />
+            <figcaption align="middle">Nearest Neighbor with 1 subsample</figcaption>
+          </td>
+          <td>
+            <img src="images/q5_bilinear_1.png" align="middle" width="400px" />
+            <figcaption align="middle">Bilinear Interpolation with 1 subsample</figcaption>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <img src="images/q5_nearest_16.png" align="middle" width="400px" />
+            <figcaption align="middle">Nearest Neighbor with 16 subsample</figcaption>
+          </td>
+          <td>
+            <img src="images/q5_bilinear_16.png" align="middle" width="400px" />
+            <figcaption align="middle">Bilinear Interpolation with 16 subsample</figcaption>
+          </td>
+        </tr>
+      </table>
+      <figcaption align="middle">Images of texmap/test1.svg.</figcaption>
+    </div>
+    <br><br>
+    With only one subsample it is visually clear that the line's intensity varies and is quite jagged when only using
+    Nearest Neighbor. The difference between the two sampling methods is significantly less albeit still noticable
+    when
+    they both have 16 subsamples per pixel. This is the case because at higher samples per pixel the averaging which
+    bilinear interpolation carries out is approximated by the averaging of the subsampled pixels. The largest
+    difference
+    between the two methods is shown when there are high frequency changes in color (such as the thin line shown in
+    the
+    example). This is because the effective sampling frequency is insufficient relative to the frequency of the source
+    signal.
+    </p>
+    <!-- explain pixel sampling in your own words and describe how you implemented it to perform texture
       mapping. Briefly discuss the two different pixel sampling methods, nearest and bilinear. 
       
       Check out the svg files in the svg/texmap/ directory. Use the pixel inspector to find a good example of where bilinear sampling clearly
@@ -338,63 +299,63 @@
 
 
 
-      <h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
-      <p>
-        Level sampling is a technique to decrease the effective frequency of the source signal by having denoised and
-        down sampled versions of the original signal. This allows the renderer to dynamically select differing levels of
-        quality depending on the effective sampling rate relative to the original texture. This allows reduction of the
-        problem with high frequency data being not fully presented by having an averaged source of lower detail which
-        better represents the data and reduces the static and moire effects experienced.
-        <br><br>
-        Pixel sampling and the number of samples per pixel ultimately boil down to filtering through additional samples.
-        The difference being that in pixel sampling the filtering is performed before the sample is taken. This results
-        in
-        a visually smoother result especially in regards to jaggies but can come with runtime overheads for calculating
-        the smoothing for each sample rather than each group of samples. On the other hand pixel sampling allows for a
-        lower memory overhead due to not needing to store all of the subsamples it is trying to handle after that
-        specific
-        sample is calculated. Level sampling on the other hand, is much less capable at taking care of boundary
-        artifacts
-        like jaggies but can much better handle things like moire effects among others. This is all done with minimal
-        speed and memory overhead due to them being precomputed and the geometric nature of the size of mip maps.
-      <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/q6_L0_near.png" align="middle" width="400px" />
-              <figcaption align="middle">L_ZERO, P_NEAREST</figcaption>
-            </td>
-            <td>
-              <img src="images/q6_L0_linear.png" align="middle" width="400px" />
-              <figcaption align="middle">L_ZERO, P_LINEAR</figcaption>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <img src="images/q6_Lnear_near.png" align="middle" width="400px" />
-              <figcaption align="middle">L_NEAREST, P_NEAREST</figcaption>
-            </td>
-            <td>
-              <img src="images/q6_Lnear_linear.png" align="middle" width="400px" />
-              <figcaption align="middle">L_NEAREST, P_LINEAR</figcaption>
-            </td>
-          </tr>
-        </table>
-        <figcaption align="middle">Images of texmap/cat.svg.</figcaption>
-      </div>
+    <h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+    <p>
+      Level sampling is a technique to decrease the effective frequency of the source signal by having denoised and
+      down sampled versions of the original signal. This allows the renderer to dynamically select differing levels of
+      quality depending on the effective sampling rate relative to the original texture. This allows reduction of the
+      problem with high frequency data being not fully presented by having an averaged source of lower detail which
+      better represents the data and reduces the static and moire effects experienced.
       <br><br>
-      </p>
-      <!-- Explain level sampling in your own words and describe how you implemented it for texture mapping.
+      Pixel sampling and the number of samples per pixel ultimately boil down to filtering through additional samples.
+      The difference being that in pixel sampling the filtering is performed before the sample is taken. This results
+      in
+      a visually smoother result especially in regards to jaggies but can come with runtime overheads for calculating
+      the smoothing for each sample rather than each group of samples. On the other hand pixel sampling allows for a
+      lower memory overhead due to not needing to store all of the subsamples it is trying to handle after that
+      specific
+      sample is calculated. Level sampling on the other hand, is much less capable at taking care of boundary
+      artifacts
+      like jaggies but can much better handle things like moire effects among others. This is all done with minimal
+      speed and memory overhead due to them being precomputed and the geometric nature of the size of mip maps.
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/q6_L0_near.png" align="middle" width="400px" />
+            <figcaption align="middle">L_ZERO, P_NEAREST</figcaption>
+          </td>
+          <td>
+            <img src="images/q6_L0_linear.png" align="middle" width="400px" />
+            <figcaption align="middle">L_ZERO, P_LINEAR</figcaption>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <img src="images/q6_Lnear_near.png" align="middle" width="400px" />
+            <figcaption align="middle">L_NEAREST, P_NEAREST</figcaption>
+          </td>
+          <td>
+            <img src="images/q6_Lnear_linear.png" align="middle" width="400px" />
+            <figcaption align="middle">L_NEAREST, P_LINEAR</figcaption>
+          </td>
+        </tr>
+      </table>
+      <figcaption align="middle">Images of texmap/cat.svg.</figcaption>
+    </div>
+    <br><br>
+    </p>
+    <!-- Explain level sampling in your own words and describe how you implemented it for texture mapping.
 You can now adjust your sampling technique by selecting pixel sampling, level sampling, or the number of samples per pixel. Describe the tradeoffs between speed, memory usage, and antialiasing power between the three various techniques.
 Using a png file you find yourself, show us four versions of the image, using the combinations of L_ZERO and P_NEAREST, L_ZERO and P_LINEAR, L_NEAREST and P_NEAREST, as well as L_NEAREST and P_LINEAR.
 To use your own png, make a copy of one of the existing svg files in svg/texmap/ (or create your own modelled after one of the provided svg files). Then, near the top of the file, change the texture filename to point to your own png. From there, you can run ./draw and pass in that svg file to render it and then save a screenshot of your results.
 Note: Choose a png that showcases the different sampling effects well. You may also want to zoom in/out, use the pixel inspector, etc. to demonstrate the differences.
 Extra credit: If you implemented any extra filtering methods, describe them and show comparisons between your results with the other above methods. -->
 
-      <h2 align="middle">Section III: Art Competition</h2>
-      <p>If you are not participating in the optional art competition, don't worry about this section!</p>
+    <h2 align="middle">Section III: Art Competition</h2>
+    <p>If you are not participating in the optional art competition, don't worry about this section!</p>
 
-      <h3 align="middle">Part 7: Draw something interesting!</h3>
+    <h3 align="middle">Part 7: Draw something interesting!</h3>
 
 </body>
 
